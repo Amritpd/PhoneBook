@@ -1,0 +1,318 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <assert.h>
+#include<stdbool.h>
+
+typedef struct contact {//Linked List definition
+    char familyName[50];
+    char firstName[50];
+    char address[50];
+    char phoneNumber[50];
+    struct contact *link;
+
+} Contact, *ContactPointer;
+
+//*** Main Function Declarations**********************************************
+ContactPointer newContact(char familyName[50], char firstName[50], char address[50], char phoneNumber[50], ContactPointer cP);
+bool checkDuplicate(char familyName[50], ContactPointer head);
+void alphaOrder(char familyName[50], char firstName[50], char address[50], char phoneNumber[50], ContactPointer *headPointer);
+void printContact(ContactPointer current);
+void printAllContacts(ContactPointer head);
+void searchForNameAndPrint(char familyName[50], ContactPointer head);
+void searchForNumberAndPrint(char phoneNumber[50], ContactPointer head);
+void deleteContact(char familyName[50], ContactPointer *headPointer);
+void deleteList(ContactPointer *headPointer);
+
+//*** Support Function Declarations*********************************************
+
+void safegets(char s[], int arraySize); // gets without buffer overflow
+void familyNameDuplicate(char familyName[]); // marker/tester friendly 
+void familyNameFound(char familyName[]); //   functions to print
+void familyNameNotFound(char familyName[]); //     messages to user
+void familyNameDeleted(char familyName[]);
+void phoneNumberFound(char phoneNumber[]);
+void phoneNumberNotFound(char phoneNumber[]);
+void printPhoneBookEmpty(void);
+void printPhoneBookTitle(void);
+
+//***Program wide constants*****************************************************
+const int MAX_LENGTH = 1023;
+const char NULL_CHAR = '\0';
+const char NEWLINE = '\n';
+
+int main(void) {
+
+    //Variables I added^^
+    const char bannerString[]
+            = "Personal Phone Book Maintenance Program.\n\n";
+    const char commandList[]
+            = "Commands are I (insert), D (delete), S (search by name),\n"
+            "  R (reverse search by phone #), P (print), Q (quit).\n";
+
+    ContactPointer contactList = NULL; // Declare linked list head.
+    char familyName[50], firstName[50], address[50], phoneNumber[50];
+
+    printf("%s", bannerString);
+    printf("%s", commandList);
+
+    char response;
+    char input[MAX_LENGTH + 1];
+    do {
+        printf("\nCommand?: ");
+        safegets(input, MAX_LENGTH + 1);
+        // Response is first char entered by user.
+        // Convert to uppercase to simplify later comparisons.
+        response = toupper(input[0]);
+
+        if (response == 'I') { // Insert a phone book entry into the linked list.   
+            printf("  family name: ");//Prompt user for various inputs
+            safegets(familyName, 50);
+            printf("  first name: ");
+            safegets(firstName, 50);
+            printf("  address: ");
+            safegets(address, 50);
+            printf("  phone number: ");
+            safegets(phoneNumber, 50);
+            if (checkDuplicate(familyName, contactList)) {//If the name isn't a duplicate
+                alphaOrder(familyName, firstName, address, phoneNumber, &contactList);
+            }
+
+        } else if (response == 'D') { // Delete an phone book entry from the list.
+
+            printf("\nEnter family name for entry to delete: ");
+            safegets(familyName, 50);//Safely get name from user
+            deleteContact(familyName, &contactList);//Deletes contact
+
+        } else if (response == 'S') {// Search for an phone book entry by family name.
+
+            printf("\nEnter family name to search for: ");
+            safegets(familyName, 50);
+            searchForNameAndPrint(familyName, contactList);
+
+
+        } else if (response == 'R') {// Search for an phone book entry by phone number.
+
+            printf("\nEnter phone number to search for: ");
+            safegets(phoneNumber, 50);
+            searchForNumberAndPrint(phoneNumber, contactList);
+        } else if (response == 'P') { // Print the phone book.            
+            printAllContacts(contactList);
+
+        } else if (response == 'Q') {//Quit the program
+            ;
+        } else {
+            printf("\nInvalid command.\n%s\n", commandList); // do this if no command matched
+        }
+    } while (response != 'Q');
+
+    deleteList(&contactList); // Delete the whole phone book linked list.   
+    printAllContacts(contactList); // Print the linked list to confirm deletion.
+
+    return 0;
+}
+
+//***Support Function Definitions***********************************************
+
+// Function to get a line of input without overflowing target char array.
+
+void safegets(char s[], int arraySize) {
+    int i = 0, maxIndex = arraySize - 1;
+    char c;
+    while (i < maxIndex && (c = getchar()) != NEWLINE) {
+        s[i] = c;
+        i = i + 1;
+    }
+    s[i] = NULL_CHAR;
+}
+// Function to call when user is trying to insert a family name that is already in the book.
+void familyNameDuplicate(char familyName[]) {
+    printf("\nAn entry for <%s> is already in the phone book!\n"
+            "New entry not entered.\n", familyName);
+}
+
+// Function to call when a family name was found in the phone book.
+
+void familyNameFound(char familyName[]) {
+    printf("\nThe family name <%s> was found in the phone book.\n\n",
+            familyName);
+}
+
+// Function to call when a family name was not found in the phone book.
+
+void familyNameNotFound(char familyName[]) {
+    printf("\nThe family name <%s> is not in the phone book.\n",
+            familyName);
+}
+
+// Function to call when a family name that is to be deleted
+// was found in the phone book.
+
+void familyNameDeleted(char familyName[]) {
+    printf("\nDeleting entry for family name <%s> from the phone book.\n",
+            familyName);
+}
+
+// Function to call when a phone number was found in the phone book.
+
+void phoneNumberFound(char phoneNumber[]) {
+    printf("\nThe phone number <%s> was found in the phone book.\n\n",
+            phoneNumber);
+}
+
+// Function to call when a phone number was not found in the phone book.
+
+void phoneNumberNotFound(char phoneNumber[]) {
+    printf("\nThe phone number <%s> is not in the phone book.\n",
+            phoneNumber);
+}
+
+// Function to call when printing an empty phone book.
+
+void printPhoneBookEmpty() {
+    printf("\nThe phone book is empty.\n");
+}
+
+// Function to call to print title when whole phone book being printed.
+
+void printPhoneBookTitle() {
+    printf("\n  My Personal Phone Book:\n\n");
+}
+
+//***Main function definitions*****************************************
+
+ContactPointer newContact(char familyName[50], char firstName[50], char address[50], char phoneNumber[50], ContactPointer cP) {
+    ContactPointer p = (ContactPointer) malloc(sizeof (Contact));
+    if (p == NULL) {//If there is no memory left
+        printf("\n Out of memory - cannot create new contact\n");
+    } else {
+        strcpy(p->familyName, familyName); //Assign each parameter to respective variables in the struct
+        strcpy(p->firstName, firstName);
+        strcpy(p->address, address);
+        strcpy(p->phoneNumber, phoneNumber);
+        p->link = cP; //P's link will point to the next node/contact
+    }
+    return p; //Return the pointer to this new contact struct
+}
+
+void alphaOrder(char familyName[50], char firstName[50], char address[50], char phoneNumber[50], ContactPointer *headPointer) {
+    ContactPointer current = *headPointer; //Head pointer contains address of the pointer to the beginning of the list
+    ContactPointer previous = NULL; //Need to keep track of previous link
+    bool located = false;
+
+    while (!located && current != NULL) {//While loop is used to find appropriate place to insert new contact
+        if (strcmp(familyName, current->familyName) < 0) {
+            located = true; //Use strcmp to determine alphabetical precedence
+        } else {
+            previous = current; //Previous now points to the old contact
+            current = current->link; //Current now points to the next contact
+        }
+    }//Create the new contact here
+    ContactPointer newOrderedContact = newContact(familyName, firstName, address, phoneNumber, current);
+
+    if (current == *headPointer) {//If this new contact is placed in the front of the list
+        *headPointer = newOrderedContact; //Then myList will point to this new contact
+    } else previous->link = newOrderedContact; //Else the previous contact's link will point to this new contact
+}
+
+void printContact(ContactPointer current) {//Function that prints out contents of the struct
+    printf("%s\n", current->familyName);
+    printf("%s\n", current->firstName);
+    printf("%s\n", current->address);
+    printf("%s\n", current->phoneNumber);
+}
+
+void printAllContacts(ContactPointer head) {//Function that prints all contacts
+    ContactPointer temp = head;
+    if (temp == NULL) {//If the list is empty
+        printPhoneBookEmpty();
+    } else {
+        printPhoneBookTitle(); //Helper function
+        while (temp != NULL) {//While temp isn't pointing to null i.e. end of list
+            printContact(temp);
+            printf("\n");
+            temp = temp->link; //Move on to the next contact to print
+        }
+    }
+}
+
+bool checkDuplicate(char familyName[50], ContactPointer head) {
+    ContactPointer temp = head;
+    while (temp != NULL) {//While I am not at the end of the list
+        if (strcmp(temp->familyName, familyName) == 0) {//If strings are the same
+            familyNameDuplicate(familyName); //Helper function
+            return false; //Return false if you find a duplicate
+        }
+        temp = temp->link; //Move on to the next contact
+    }
+    return true; //return true if no matches found
+}
+
+void searchForNameAndPrint(char familyName[50], ContactPointer head) {
+    ContactPointer temp = head;
+    if (head == NULL) {//If the phone book is empty
+        printPhoneBookEmpty();
+        return;
+    }
+    while (temp != NULL) {
+        if (strcmp(temp->familyName, familyName) == 0) {
+            familyNameFound(familyName);
+            printContact(temp); //Print the contact info that matched
+            return; //The family name inputted by user
+        }
+        temp = temp->link;
+    }
+    familyNameNotFound(familyName); //print this if a match isn't found
+}
+
+void searchForNumberAndPrint(char phoneNumber[50], ContactPointer head) {
+    ContactPointer temp = head;
+    if (head == NULL) {
+        printPhoneBookEmpty();
+        return;
+    }
+    while (temp != NULL) {
+        if (strcmp(temp->phoneNumber, phoneNumber) == 0) {
+            phoneNumberFound(phoneNumber); //Same concept as previous function
+            printContact(temp);
+            return;
+        }
+        temp = temp->link;
+    }
+    phoneNumberNotFound(phoneNumber);
+}
+
+void deleteContact(char familyName[50], ContactPointer *headPointer) {
+    ContactPointer current = *headPointer; //Current points to what head points to
+    ContactPointer previous = NULL;
+    bool found = false;
+
+    while (!found && current != NULL) {
+        if (strcmp(current->familyName, familyName) == 0) {
+            found = true;//If the names are the same, then I found the match
+        } else {
+            previous = current;
+            current = current->link;
+        }
+    }
+
+    if (found) {
+        familyNameDeleted(familyName);//Helper function
+        if (current == *headPointer) {//If the first contact of the list is to be deleted
+            *headPointer = current->link;//head now points to the next contact
+        } else {//The previous contact's link will point to the contact that is immediately after the contact to be deleted
+            previous->link = current->link;
+        }
+        free(current);//Free pointer to this contact to be deleted
+    } else familyNameNotFound(familyName);
+}
+
+void deleteList(ContactPointer *headPointer) {//Need to use a pointer to the head pointer so the actual list is modified, not just a copy
+    ContactPointer next;
+    while (*headPointer != NULL) {
+        next = (*headPointer)->link;
+        free(*headPointer);
+        *headPointer = next;
+    }
+}
