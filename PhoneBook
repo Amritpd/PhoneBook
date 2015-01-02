@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include<stdbool.h>
+//Copyright, Amrit Kumar Prasad (No duplication allowed without written permission given)
 
 typedef struct contact {//Linked List definition
     char familyName[50];
